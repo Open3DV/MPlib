@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
 
+from typing import Union
 import numpy as np
 
 from .collision_detection import AllowedCollisionMatrix
@@ -111,7 +112,7 @@ def compute_default_collisions(
 
 
 def replace_urdf_package_keyword(
-    urdf_path: str | Path,
+    urdf_path: Union[str, Path],
     new_package_keyword: str = "",
 ) -> Path:
     """
@@ -133,7 +134,7 @@ def replace_urdf_package_keyword(
 
 
 def generate_srdf(
-    urdf_path: str | Path,
+    urdf_path: Union[str, Path],
     new_package_keyword: str = "",
     *,
     num_samples=100000,
