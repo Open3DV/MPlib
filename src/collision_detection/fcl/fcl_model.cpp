@@ -111,10 +111,17 @@ void FCLModelTpl<S>::dfsParseTree(const urdf::LinkConstSharedPtr &link,
         const urdf::MeshSharedPtr urdf_mesh =
             urdf::dynamic_pointer_cast<urdf::Mesh>(geom_model);
         std::string file_name = urdf_mesh->filename;
+
+        // Remove the first three characters
+        if (file_name.substr(0, 3) == "../") {
+            file_name.erase(0, 3); 
+        }
+
         if (use_convex_ && file_name.find(".convex.stl") == std::string::npos)
           file_name = file_name += ".convex.stl";
         auto mesh_path = (boost::filesystem::path(package_dir_) / file_name).string();
-        if (mesh_path == "") {
+
+        if (mesh_path.empty()) {
           std::stringstream ss;
           ss << "Mesh " << file_name << " could not be found.";
           throw std::invalid_argument(ss.str());

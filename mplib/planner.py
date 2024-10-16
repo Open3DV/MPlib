@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, Optional, Sequence
+from typing import Union, Literal, Optional, Sequence
 
 import numpy as np
 import toppra as ta
@@ -24,10 +24,10 @@ class Planner:
     # constructor ankor
     def __init__(
         self,
-        urdf: str | Path,
+        urdf: Union[str, Path],
         move_group: str,
         *,
-        srdf: Optional[str | Path] = None,
+        srdf: Optional[Union[str, None]] = None,
         new_package_keyword: str = "",
         use_convex: bool = False,
         user_link_names: Sequence[str] = [],
