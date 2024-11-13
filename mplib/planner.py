@@ -348,12 +348,13 @@ class Planner:
             q_goals = q_goals[np.linalg.norm(q_goals - start_qpos, axis=1).argmin()]
         return status, q_goals
 
-    def TOPP(self, path, step=0.1, verbose=False, duration=None):
+    def TOPP(self, path, step=0.1, sample_num=None, verbose=False, duration=None):
         """
         Time-Optimal Path Parameterization
 
         Args:
             path: numpy array of shape (n, dof)
+            sample_num: The number of samples to generate for sampling.
             step: step size for the discretization
             verbose: if True, will print the log of TOPPRA
             duration: desired duration of the path in seconds. If None, retunrs
@@ -381,7 +382,11 @@ class Planner:
         jnt_traj = instance.compute_trajectory()
         if jnt_traj is None:
             raise RuntimeError("Fail to parameterize path")
-        ts_sample = np.linspace(0, jnt_traj.duration, int(jnt_traj.duration / step))  # type: ignore
+
+        if sample_num is None:
+            sample_num = int(jnt_traj.duration / step)
+
+        ts_sample = np.linspace(0, jnt_traj.duration, sample_num)  # type: ignore
         qs_sample = jnt_traj(ts_sample)
         qds_sample = jnt_traj(ts_sample, 1)
         qdds_sample = jnt_traj(ts_sample, 2)
@@ -535,6 +540,7 @@ class Planner:
         current_qpos: np.ndarray,
         *,
         time_step: float = 0.1,
+        sample_num: Optional[int] = None,
         rrt_range: float = 0.1,
         planning_time: float = 1,
         fix_joint_limits: bool = True,
@@ -554,6 +560,7 @@ class Planner:
             mask: mask for IK. When set, the IK will leave certain joints out of
                 planning
             time_step: time step for TOPP
+            sample_num: The number of samples to generate for sampling.
             rrt_range: step size for RRT
             planning_time: time limit for RRT
             fix_joint_limits: if True, will clip the joint configuration to be within
@@ -610,7 +617,9 @@ class Planner:
                 ta.setup_logging("INFO")
             else:
                 ta.setup_logging("WARNING")
-            times, pos, vel, acc, duration = self.TOPP(path, time_step)
+            (
+                times, pos, vel, acc, duration
+            ) = self.TOPP(path, time_step, sample_num)
             return {
                 "status": "Success",
                 "time": times,
@@ -633,6 +642,7 @@ class Planner:
         mask: Optional[list[bool] | np.ndarray] = None,
         *,
         time_step: float = 0.1,
+        sample_num: Optional[int] = None,
         rrt_range: float = 0.1,
         planning_time: float = 1,
         fix_joint_limits: bool = True,
@@ -652,6 +662,7 @@ class Planner:
             mask: if the value at a given index is True, the joint is *not* used in the
                 IK
             time_step: time step for TOPPRA (time parameterization of path)
+            sample_num: The number of samples to generate for sampling.
             rrt_range: step size for RRT
             planning_time: time limit for RRT
             fix_joint_limits: if True, will clip the joint configuration to be within
@@ -706,6 +717,7 @@ class Planner:
         *,
         qpos_step: float = 0.1,
         time_step: float = 0.1,
+        sample_num: Optional[int] = None,
         wrt_world: bool = True,
         verbose: bool = False,
     ) -> dict[str, str | np.ndarray | np.float64]:
@@ -719,6 +731,7 @@ class Planner:
             current_qpos: current joint configuration (either full or move_group joints)
             qpos_step: size of the random step
             time_step: time step for the discretization
+            sample_num: The number of samples to generate for sampling.
             wrt_world: if True, interpret the target pose with respect to the
                 world frame instead of the base frame
             verbose: if True, will print the log of TOPPRA
@@ -823,7 +836,9 @@ class Planner:
                     ta.setup_logging("INFO")
                 else:
                     ta.setup_logging("WARNING")
-                times, pos, vel, acc, duration = self.TOPP(np.vstack(path), time_step)
+                (
+                    times, pos, vel, acc, duration
+                ) = self.TOPP(np.vstack(path), time_step, sample_num)
                 return {
                     "status": "Success",
                     "time": times,
