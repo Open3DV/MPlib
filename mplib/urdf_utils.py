@@ -7,6 +7,7 @@ import numpy as np
 
 from .collision_detection import AllowedCollisionMatrix
 from .pymp import ArticulatedModel
+import concurrent.futures
 
 
 def compute_default_collisions(
@@ -73,6 +74,26 @@ def compute_default_collisions(
     # 3. disable collision pairs that always collide and never collide via sampling
     n_links = len(user_link_names)
     collision_cnt = np.zeros((n_links, n_links), dtype=int)
+    
+    def sample_and_count():  
+        local_count = np.zeros((n_links, n_links), dtype=int)  
+        robot.set_qpos(pinocchio_model.get_random_configuration(), True)  
+        
+        collisions = fcl_model.check_self_collision()  
+        for collision in collisions:  
+            u = link_name_2_idx[collision.link_name1]  
+            v = link_name_2_idx[collision.link_name2]  
+            local_count[u][v] += 1  # 只记录 u 到 v 的碰撞次数  
+        
+        return local_count
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:  
+        futures = [executor.submit(sample_and_count) for _ in range(num_samples)]  
+        
+        for future in concurrent.futures.as_completed(futures):  
+            local_count = future.result()  
+            collision_cnt += local_count
+
     for _ in range(num_samples):
         robot.set_qpos(pinocchio_model.get_random_configuration(), True)
         for collision in fcl_model.check_self_collision():

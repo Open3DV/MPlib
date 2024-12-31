@@ -68,7 +68,7 @@ class Planner:
             ).is_file():
                 print(f"No SRDF file provided but found {srdf}")
             else:
-                srdf = generate_srdf(urdf, new_package_keyword, verbose=True)
+                srdf = generate_srdf(urdf, new_package_keyword, num_samples=100, verbose=True)
         self.srdf = srdf
 
         # replace package:// keyword if exists
@@ -131,6 +131,10 @@ class Planner:
         self.acm = self.planning_world.get_allowed_collision_matrix()
 
         self.planner = OMPLPlanner(world=self.planning_world)
+
+    def regenerate_srdf(self, num_samples:int= 100000):
+        srdf = generate_srdf(self.urdf, "", num_samples=num_samples, verbose=True)
+        self.srdf = srdf
 
     def wrap_joint_limit(self, qpos: np.ndarray) -> bool:
         """
